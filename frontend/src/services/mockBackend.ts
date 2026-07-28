@@ -1,8 +1,15 @@
-import { Patient, CreatePatientInput, UpdatePatientInput, PatientFilter, PagedResult, Gender, Appointment, MedicalRecord, AppointmentStatus } from '../types';
+import { Patient, CreatePatientInput, UpdatePatientInput, PatientFilter, PagedResult, Gender, Appointment, MedicalRecord, AppointmentStatus, Doctor } from '../types';
 
 const PATIENTS_STORAGE_KEY = 'mrms_mock_patients_v1';
 const APPOINTMENTS_STORAGE_KEY = 'mrms_mock_appointments_v1';
 const RECORDS_STORAGE_KEY = 'mrms_mock_records_v1';
+
+export const INITIAL_DOCTORS: Doctor[] = [
+  { id: 1, fullName: 'Dr. Sarah Jenkins', specialization: 'Cardiology', phone: '+15550001111', email: 'sarah.j@mrms.org', licenseNumber: 'MED-8821' },
+  { id: 2, fullName: 'Dr. Marcus Vance', specialization: 'Endocrinology', phone: '+15550002222', email: 'marcus.v@mrms.org', licenseNumber: 'MED-9932' },
+  { id: 3, fullName: 'Dr. Emily Watson', specialization: 'Pediatrics', phone: '+15550003333', email: 'emily.w@mrms.org', licenseNumber: 'MED-4412' },
+  { id: 4, fullName: 'Dr. Alexander Hayes', specialization: 'Neurology', phone: '+15550004444', email: 'alex.h@mrms.org', licenseNumber: 'MED-5509' },
+];
 
 const INITIAL_PATIENTS: Patient[] = [
   {
@@ -52,22 +59,6 @@ const INITIAL_PATIENTS: Patient[] = [
     emergencyContact: '+15557654321 (Mother)',
     medicalHistorySummary: 'No chronic illness. Routine checkups.',
     createdAt: '2026-07-10T11:00:00Z',
-  },
-  {
-    id: 4,
-    patientCode: 'PAT-202607-1004',
-    fullName: 'David K. Chen',
-    phone: '+15550165514',
-    email: 'd.chen@example.com',
-    dateOfBirth: '1985-01-30',
-    age: 41,
-    gender: Gender.Male,
-    genderName: 'Male',
-    address: '88 Wall Street, New York',
-    bloodGroup: 'AB+',
-    emergencyContact: '+15556543210 (Sister)',
-    medicalHistorySummary: 'Hypertension managed with Lisinopril.',
-    createdAt: '2026-07-15T16:20:00Z',
   },
 ];
 
@@ -153,9 +144,9 @@ export const saveStoredRecords = (records: MedicalRecord[]) => {
   localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
 };
 
-// Mock async API handlers
+// Patient Handlers
 export const mockFetchPatients = async (filter: PatientFilter): Promise<PagedResult<Patient>> => {
-  await new Promise((res) => setTimeout(res, 250)); // simulate network latency
+  await new Promise((res) => setTimeout(res, 200));
   let list = getStoredPatients();
 
   if (filter.searchTerm) {
@@ -182,7 +173,6 @@ export const mockFetchPatients = async (filter: PatientFilter): Promise<PagedRes
   const pageSize = filter.pageSize || 10;
   const startIndex = (pageNumber - 1) * pageSize;
   const items = list.slice(startIndex, startIndex + pageSize);
-
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
   return {
@@ -197,10 +187,9 @@ export const mockFetchPatients = async (filter: PatientFilter): Promise<PagedRes
 };
 
 export const mockCreatePatient = async (input: CreatePatientInput): Promise<Patient> => {
-  await new Promise((res) => setTimeout(res, 300));
+  await new Promise((res) => setTimeout(res, 250));
   const list = getStoredPatients();
 
-  // Validate phone uniqueness
   const phoneExists = list.some((p) => p.phone.trim() === input.phone.trim());
   if (phoneExists) {
     throw { status: 409, message: `A patient with phone number '${input.phone}' already exists.` };
@@ -234,15 +223,11 @@ export const mockCreatePatient = async (input: CreatePatientInput): Promise<Pati
 };
 
 export const mockUpdatePatient = async (id: number, input: UpdatePatientInput): Promise<Patient> => {
-  await new Promise((res) => setTimeout(res, 300));
+  await new Promise((res) => setTimeout(res, 250));
   const list = getStoredPatients();
-
   const index = list.findIndex((p) => p.id === id);
-  if (index === -1) {
-    throw { status: 404, message: `Patient with ID ${id} not found.` };
-  }
+  if (index === -1) throw { status: 404, message: `Patient with ID ${id} not found.` };
 
-  // Check phone uniqueness
   const phoneExists = list.some((p) => p.id !== id && p.phone.trim() === input.phone.trim());
   if (phoneExists) {
     throw { status: 409, message: `A patient with phone number '${input.phone}' already exists.` };
@@ -275,11 +260,173 @@ export const mockUpdatePatient = async (id: number, input: UpdatePatientInput): 
 };
 
 export const mockDeletePatient = async (id: number): Promise<void> => {
-  await new Promise((res) => setTimeout(res, 250));
+  await new Promise((res) => setTimeout(res, 200));
   const list = getStoredPatients();
   const filtered = list.filter((p) => p.id !== id);
-  if (list.length === filtered.length) {
-    throw { status: 404, message: `Patient with ID ${id} not found.` };
-  }
   saveStoredPatients(filtered);
+};
+
+// Appointment Handlers
+export const mockCreateAppointment = async (input: {
+  patientId: number;
+  doctorId: number;
+  appointmentDateTime: string;
+  reasonForVisit: string;
+  notes?: string;
+}): Promise<Appointment> => {
+  await new Promise((res) => setTimeout(res, 300));
+  const appointments = getStoredAppointments();
+  const patients = getStoredPatients();
+
+  const patient = patients.find((p) => p.id === Number(input.patientId));
+  if (!patient) throw { status: 404, message: `Selected Patient not found.` };
+
+  const doctor = INITIAL_DOCTORS.find((d) => d.id === Number(input.doctorId));
+  if (!doctor) throw { status: 404, message: `Selected Doctor not found.` };
+
+  // Rule: Check slot collision for DoctorId + AppointmentDateTime
+  const requestedTime = new Date(input.appointmentDateTime).getTime();
+  const slotConflict = appointments.some(
+    (a) =>
+      a.doctorId === Number(input.doctorId) &&
+      a.status !== AppointmentStatus.Cancelled &&
+      Math.abs(new Date(a.appointmentDateTime).getTime() - requestedTime) < 15 * 60 * 1000 // 15 min window
+  );
+
+  if (slotConflict) {
+    throw {
+      status: 409,
+      message: `Dr. ${doctor.fullName} already has a booked appointment near ${new Date(input.appointmentDateTime).toLocaleString()}. Please choose a different time slot.`,
+    };
+  }
+
+  const newApp: Appointment = {
+    id: Date.now(),
+    patientId: patient.id,
+    patientName: patient.fullName,
+    doctorId: doctor.id,
+    doctorName: `${doctor.fullName} (${doctor.specialization})`,
+    appointmentDateTime: input.appointmentDateTime,
+    status: AppointmentStatus.Scheduled,
+    reasonForVisit: input.reasonForVisit.trim(),
+    notes: input.notes?.trim() || '',
+    createdAt: new Date().toISOString(),
+  };
+
+  appointments.unshift(newApp);
+  saveStoredAppointments(appointments);
+  return newApp;
+};
+
+export const mockRescheduleAppointment = async (id: number, newDateTime: string, reason?: string): Promise<Appointment> => {
+  await new Promise((res) => setTimeout(res, 250));
+  const appointments = getStoredAppointments();
+  const index = appointments.findIndex((a) => a.id === id);
+  if (index === -1) throw { status: 404, message: `Appointment not found.` };
+
+  const app = appointments[index];
+  const requestedTime = new Date(newDateTime).getTime();
+
+  // Slot collision check excluding current appointment
+  const slotConflict = appointments.some(
+    (a) =>
+      a.id !== id &&
+      a.doctorId === app.doctorId &&
+      a.status !== AppointmentStatus.Cancelled &&
+      Math.abs(new Date(a.appointmentDateTime).getTime() - requestedTime) < 15 * 60 * 1000
+  );
+
+  if (slotConflict) {
+    throw {
+      status: 409,
+      message: `Doctor is unavailable at ${new Date(newDateTime).toLocaleString()} due to an existing booking.`,
+    };
+  }
+
+  appointments[index] = {
+    ...app,
+    appointmentDateTime: newDateTime,
+    notes: reason ? `${app.notes} [Rescheduled: ${reason}]`.trim() : app.notes,
+    status: AppointmentStatus.Scheduled,
+  };
+
+  saveStoredAppointments(appointments);
+  return appointments[index];
+};
+
+export const mockCancelAppointment = async (id: number): Promise<Appointment> => {
+  await new Promise((res) => setTimeout(res, 200));
+  const appointments = getStoredAppointments();
+  const index = appointments.findIndex((a) => a.id === id);
+  if (index === -1) throw { status: 404, message: `Appointment not found.` };
+
+  appointments[index].status = AppointmentStatus.Cancelled;
+  saveStoredAppointments(appointments);
+  return appointments[index];
+};
+
+// Medical Record Handlers
+export const mockCreateMedicalRecord = async (input: {
+  patientId: number;
+  doctorId: number;
+  appointmentId?: number | null;
+  diagnosis: string;
+  clinicalNotes: string;
+  prescriptionMedicines?: string;
+  vitalSigns?: string;
+}): Promise<MedicalRecord> => {
+  await new Promise((res) => setTimeout(res, 300));
+  const records = getStoredRecords();
+  const patients = getStoredPatients();
+
+  const patient = patients.find((p) => p.id === Number(input.patientId));
+  if (!patient) throw { status: 404, message: `Selected Patient not found.` };
+
+  const doctor = INITIAL_DOCTORS.find((d) => d.id === Number(input.doctorId));
+  if (!doctor) throw { status: 404, message: `Selected Doctor not found.` };
+
+  const newRecord: MedicalRecord = {
+    id: Date.now(),
+    patientId: patient.id,
+    patientName: patient.fullName,
+    doctorId: doctor.id,
+    doctorName: doctor.fullName,
+    appointmentId: input.appointmentId || undefined,
+    diagnosis: input.diagnosis.trim(),
+    clinicalNotes: input.clinicalNotes.trim(),
+    prescriptionMedicines: input.prescriptionMedicines?.trim() || '',
+    vitalSigns: input.vitalSigns?.trim() || 'BP: 120/80 mmHg | Temp: 98.6 F',
+    isLocked: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  records.unshift(newRecord);
+  saveStoredRecords(records);
+  return newRecord;
+};
+
+export const mockUpdateMedicalRecord = async (
+  id: number,
+  input: { diagnosis: string; clinicalNotes: string; prescriptionMedicines?: string; vitalSigns?: string },
+  userRole: string = 'Doctor'
+): Promise<MedicalRecord> => {
+  await new Promise((res) => setTimeout(res, 250));
+  if (userRole !== 'Admin') {
+    throw { status: 403, message: `Unauthorized: Only Admin role can modify clinical records once created.` };
+  }
+
+  const records = getStoredRecords();
+  const index = records.findIndex((r) => r.id === id);
+  if (index === -1) throw { status: 404, message: `Medical Record not found.` };
+
+  records[index] = {
+    ...records[index],
+    diagnosis: input.diagnosis.trim(),
+    clinicalNotes: input.clinicalNotes.trim(),
+    prescriptionMedicines: input.prescriptionMedicines?.trim() || records[index].prescriptionMedicines,
+    vitalSigns: input.vitalSigns?.trim() || records[index].vitalSigns,
+  };
+
+  saveStoredRecords(records);
+  return records[index];
 };
