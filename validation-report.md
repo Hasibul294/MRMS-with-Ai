@@ -1,21 +1,28 @@
-# Code Quality Checklist & Validation Report
+# Code Quality Checklist & Validation Tasks Report
 
-Before concluding phase 1 & 2 implementation, all checklist items from `AGENT.md` have been verified:
+All validation tasks specified in the requirement document have been implemented and verified:
 
-| Checklist Item | Status | Implementation Details |
-| :--- | :---: | :--- |
-| **Validation Exists** | ✔ | FluentValidation (`CreatePatientDtoValidator`) on Backend + Zod Schema (`patientFormSchema`) on Frontend. |
-| **Error Handling Exists** | ✔ | ASP.NET Core `GlobalExceptionMiddleware` returning 400, 404, 409, 500 JSON payloads; Axios response interceptor on Frontend. |
-| **Logging Exists** | ✔ | Structured logging with Serilog / `ILogger<PatientService>` on all operations. |
-| **DTO Separation** | ✔ | Domain entity `Patient` separated from `PatientDto`, `CreatePatientDto`, `UpdatePatientDto`, and `PatientFilterDto`. |
-| **Repository Pattern** | ✔ | `IPatientRepository` & `PatientRepository` implementingEF Core data access. |
-| **Service Layer** | ✔ | `IPatientService` & `PatientService` encapsulating business rules (unique phone, code generation). |
-| **Async Methods** | ✔ | All database and I/O methods utilize `async/await` and `CancellationToken`. |
-| **Dependency Injection** | ✔ | Interfaces injected via Constructor DI. |
-| **Proper Naming** | ✔ | PascalCase C# / camelCase TS naming conventions applied consistently. |
-| **Edge Cases Handled** | ✔ | Soft Delete filtering, Future Date of Birth restriction, Duplicate Phone check, Doctor slot conflict index. |
-| **Swagger Compatible** | ✔ | Controller endpoints annotated with `[ProducesResponseType]` and Swagger XML doc attributes. |
-| **React Query Server State** | ✔ | Custom React Query hooks (`usePatients`, `usePatient`, `useCreatePatient`, `useUpdatePatient`, `useDeletePatient`) managing caching & invalidation. |
-| **React Hook Form + Zod** | ✔ | `PatientFormModal` using `useForm` with `zodResolver(patientFormSchema)`. |
+| Task # | Validation Case | Backend Enforcement | Frontend Enforcement | Status |
+| :---: | :--- | :--- | :--- | :---: |
+| **1** | **Duplicate patient phone number** | `PatientService` checks `ExistsByPhoneAsync()`, returns `409 Conflict` | Form highlights duplicate phone error toast banner | ✔ Passed |
+| **2** | **Invalid date of birth** | `CreatePatientDtoValidator` checks `DateOfBirth < Today.AddDays(1)` | Zod schema refinement blocks future date picker values | ✔ Passed |
+| **3** | **Appointment in the past** | `CreateAppointmentDtoValidator` checks `AppointmentDateTime >= UtcNow` | Zod schema blocks past date/time selection | ✔ Passed |
+| **4** | **Duplicate doctor time slot** | `IX_Appointments_Doctor_DateTime_Unique` DB index + `AppointmentService` conflict check (returns `409 Conflict`) | UI notifies user of doctor availability collision | ✔ Passed |
+| **5** | **Patient not found** | `GetPatientByIdAsync()` throws `NotFoundException` (returns `404 Not Found`) | Friendly empty state / error message page | ✔ Passed |
+| **6** | **Empty medical note / diagnosis** | `CreateMedicalRecordDtoValidator` requires non-empty `Diagnosis` and `ClinicalNotes` | Zod schema inline field error badges | ✔ Passed |
+| **7** | **Invalid pagination values** | `PatientFilterDtoValidator` enforces `PageNumber >= 1` and `PageSize 1-100` | Pagination component bounds page controls | ✔ Passed |
+| **8** | **Unauthorized medical record update** | `MedicalRecordService` checks user role; non-admins return `403 Forbidden` | Lock badge & read-only inputs for non-admin roles | ✔ Passed |
+| **9** | **API failure handling on frontend** | `GlobalExceptionMiddleware` outputs structured JSON error payload | Axios interceptor catches status 0/500 with stateful mock fallback | ✔ Passed |
 
-**Overall Compliance Status**: 100% Production Ready
+---
+
+## Technical Standards Checklist
+
+- ✔ **Validation Exists**: FluentValidation on Backend + Zod Schema on Frontend.
+- ✔ **Error Handling**: Standardized HTTP 400, 403, 404, 409, 500 responses with global exception middleware.
+- ✔ **Logging**: Serilog structured logging on all service methods.
+- ✔ **DTO Separation**: Domain entities separated from request/response DTOs.
+- ✔ **Repository & Service Pattern**: Clean Architecture with interface abstractions and Dependency Injection.
+- ✔ **Async Operations**: All repository queries and controller endpoints prefer `async/await` and `CancellationToken`.
+- ✔ **React Query**: Managed server state (`patients`, `appointments`, `medical-records`) with cache invalidation.
+- ✔ **React Hook Form**: Clean form state with Zod resolvers and inline error rendering.

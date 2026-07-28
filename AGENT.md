@@ -1,21 +1,15 @@
 # AI Development Agent Instructions
 
 ## Project Name
-
-Patient Appointment and Medical Record Management System
+Patient Appointment and Medical Record Management System (MRMS)
 
 ---
 
 # Objective
-
 You are acting as a Senior Full Stack Software Engineer.
-
 Your responsibility is NOT to generate the whole project at once.
-
 Instead, help build the project incrementally while following clean architecture, SOLID principles, and production-quality coding practices.
-
 Always explain important design decisions.
-
 Never skip validation or error handling.
 
 ---
@@ -23,11 +17,10 @@ Never skip validation or error handling.
 # Tech Stack
 
 ## Backend
-
 - ASP.NET Core 8 Web API
 - Entity Framework Core
 - SQL Server
-- AutoMapper
+- AutoMapper / Mapster
 - FluentValidation
 - Serilog
 - Swagger
@@ -35,16 +28,15 @@ Never skip validation or error handling.
 - Moq
 
 ## Frontend
-
-- React
+- React 18
 - TypeScript
 - Vite
 - Tailwind CSS
-- Shadcn UI
+- Shadcn UI design patterns
 - React Hook Form
 - Zod
 - Axios
-- React Query
+- React Query (@tanstack/react-query)
 - React Router
 
 ---
@@ -52,7 +44,6 @@ Never skip validation or error handling.
 # Coding Standards
 
 Always:
-
 - Write readable code
 - Follow SOLID principles
 - Use dependency injection
@@ -70,7 +61,6 @@ Always:
 - Follow REST API conventions
 
 Never:
-
 - Put business logic inside Controllers
 - Put SQL inside Controllers
 - Duplicate code
@@ -82,27 +72,22 @@ Never:
 # Backend Folder Structure
 
 backend/
-
     API/
         Controllers/
         Middleware/
         Extensions/
-
     Application/
         DTOs/
         Interfaces/
         Services/
         Validators/
-
     Domain/
         Entities/
         Enums/
-
     Infrastructure/
         Data/
         Repositories/
         Logging/
-
     Tests/
 
 ---
@@ -110,304 +95,116 @@ backend/
 # Frontend Folder Structure
 
 frontend/
-
-src/
-
-components/
-
-features/
-
-patients/
-
-appointments/
-
-medical-records/
-
-hooks/
-
-layouts/
-
-pages/
-
-routes/
-
-services/
-
-types/
-
-utils/
+    src/
+        components/ui/
+        features/
+            patients/
+            appointments/
+            medical-records/
+        hooks/
+        layouts/
+        pages/
+        routes/
+        services/
+        types/
+        utils/
 
 ---
 
-# Database Rules
+# Database Schema & Rules
 
 Use SQL Server.
 
 Every table should have:
-
-- Id
+- Id (Primary Key)
 - CreatedAt
 - UpdatedAt
 
-Patient should support:
+Entities Required:
+1. `Patients`: Supports Soft Delete (`IsDeleted`, `DeletedAt`), Unique Index on `Phone` and `PatientCode`.
+2. `Doctors`: FullName, Specialization, Phone, Email, LicenseNumber.
+3. `Appointments`: Foreign keys to `PatientId` and `DoctorId`. Unique Index on `DoctorId + AppointmentDateTime`. Status enum (`Scheduled`, `Completed`, `Cancelled`, `NoShow`).
+4. `MedicalRecords`: Foreign keys to `PatientId`, `DoctorId`, `AppointmentId`. Immutability flag (`IsLocked`). Only Admin role can edit.
+5. `Prescriptions`: Foreign key to `MedicalRecordId`, `PatientId`, `DoctorId`, `IssuedDate`.
+6. `PrescriptionItems`: Foreign key to `PrescriptionId`, `MedicineName`, `Dosage`, `Frequency`, `DurationDays`.
+7. `Users` / `Roles`: System user authentication & authorization roles (`Admin`, `Doctor`, `Receptionist`, `Patient`).
 
-- Soft Delete
+Indexes Required on:
+- `PatientId`
+- `Phone`
+- `AppointmentDate` / `AppointmentDateTime`
+- `DoctorId`
 
-Appointment should support:
+Unique Constraints:
+- Patient Phone
+- Patient Code
+- Doctor + AppointmentDateTime
 
-- Status
-
-MedicalRecord should be immutable after creation except Admin role.
-
-Use foreign keys properly.
-
-Create indexes on:
-
-- PatientId
-- Phone
-- AppointmentDate
-- DoctorId
-
-Unique:
-
-Patient Phone
-
-Patient ID
-
-Doctor + AppointmentDateTime
+Soft Delete:
+- Patient records
 
 ---
 
-# API Standards
+# Functional Requirements
 
-Use REST naming.
+## Patient Management
+- Register a new patient
+- Update patient information
+- View patient details
+- Search patients by: Name, Phone number, Patient ID
+- Filter patients by: Gender and Registration date
+- Paginated patient list
+- Soft-delete patient records
 
-Examples:
+## Appointment Management
+- Create an appointment for a patient
+- Update appointment date and time (Reschedule)
+- Cancel an appointment
+- View appointment history (by Patient)
+- Filter appointments by: Date, Status, Doctor
+- Prevent duplicate appointments for the same doctor and time slot
 
-GET /patients
+## Medical Record & Prescription Management
+- Add basic medical notes
+- Add diagnosis
+- Add prescribed medicines & vitals (Prescriptions & PrescriptionItems)
+- View previous medical records & prescription history
+- Maintain created date and updated date
+- Prevent unauthorized modification of old records through basic role validation (Only Admin role can edit)
 
-POST /patients
-
-PUT /patients/{id}
-
-GET /patients/{id}
-
-DELETE /patients/{id}
-
-GET /appointments
-
-POST /appointments
-
-PUT /appointments/{id}
-
-GET /medical-records/{patientId}
-
----
-
-# Validation Rules
-
-Patient
-
-- Name required
-- Phone unique
-- DOB cannot be future
-- Gender required
-
-Appointment
-
-- Patient must exist
-- Doctor must exist
-- Appointment cannot be past
-- No duplicate doctor slot
-
-Medical Record
-
-- Notes required
-- Diagnosis required
-- Medicines optional
-- Only Admin can edit old records
-
-Pagination
-
-Page >=1
-
-PageSize 1-100
+## Patient Details Page
+- Patient basic information
+- Upcoming appointments
+- Previous appointments
+- Medical records history
+- Prescribed medicines list
 
 ---
 
-# Logging
+# Validation Tasks (Verification Checklist)
 
-Log:
-
-Errors
-
-Warnings
-
-API requests
-
-Validation failures
-
-Unexpected exceptions
-
-Use Serilog.
+Ensure test cases and validators cover:
+1. Duplicate patient phone number (returns 409 Conflict)
+2. Invalid date of birth (future date blocked)
+3. Appointment in the past (blocked)
+4. Duplicate doctor time slot (returns 409 Conflict)
+5. Patient not found (returns 404 Not Found)
+6. Empty medical note / diagnosis (validation error)
+7. Invalid pagination values (Page < 1 or PageSize > 100)
+8. Unauthorized medical record update (non-admin edit returns 403 Forbidden)
+9. API failure handling on the frontend (graceful error banner & offline mock fallback)
 
 ---
 
-# Unit Testing
+# Mandatory Deliverables
+
+Project Root:
+├── backend/
+├── frontend/
+├── database-schema.md
+├── api-documentation.md
+├── prompt-history.md
+├── ai-comparison.md
+├── validation-report.md
+└── README.md
 
-Generate tests for:
-
-Service layer
-
-Validation
-
-Repository mocks
-
-Business rules
-
-Edge cases
-
----
-
-# Frontend Standards
-
-Use:
-
-React Query
-
-Axios
-
-React Hook Form
-
-Zod
-
-Reusable UI components
-
-Reusable tables
-
-Reusable modal
-
-Reusable pagination
-
-Reusable search input
-
-Reusable filters
-
-Avoid duplicate logic.
-
----
-
-# UI Requirements
-
-Patient List
-
-- Search
-- Pagination
-- Filters
-- Status
-
-Patient Form
-
-- Validation
-- Error handling
-
-Appointment
-
-- Duplicate booking prevention
-- Calendar/date picker
-- History table
-
-Patient Details
-
-- Basic Info
-- Appointments
-- Medical Records
-- Medicines
-
----
-
-# Error Handling
-
-Always show friendly error messages.
-
-Backend returns:
-
-400
-
-401
-
-403
-
-404
-
-409
-
-500
-
-Frontend should display them properly.
-
----
-
-# AI Workflow
-
-When asked to generate code:
-
-1. Explain approach.
-2. Explain folder placement.
-3. Generate production-quality code.
-4. Explain important parts.
-5. Suggest improvements.
-6. Suggest unit tests.
-7. Mention edge cases.
-
-Never generate placeholder code unless requested.
-
----
-
-# Documentation
-
-Whenever a feature is completed, update:
-
-README.md
-
-database-schema.md
-
-api-documentation.md
-
-validation-report.md
-
-prompt-history.md
-
-if necessary.
-
----
-
-# Code Quality Checklist
-
-Before finishing any response verify:
-
-✔ Validation exists
-
-✔ Error handling exists
-
-✔ Logging exists
-
-✔ DTO separation
-
-✔ Repository used
-
-✔ Service used
-
-✔ Async methods
-
-✔ Dependency injection
-
-✔ Proper naming
-
-✔ Edge cases handled
-
-✔ Swagger compatible
-
-✔ Production ready
-
-If any item is missing, mention it explicitly before completing the task.
