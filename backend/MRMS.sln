@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRMS.Domain", "MRMS.Domain\MRMS.Domain.csproj", "{B6E09471-1426-43B4-974A-33301A188DBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRMS.Application", "MRMS.Application\MRMS.Application.csproj", "{322792A4-ACB4-41BB-AE80-7062AD84B0FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRMS.Infrastructure", "MRMS.Infrastructure\MRMS.Infrastructure.csproj", "{538FFDBD-0C47-4712-AA26-7A437B88816B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRMS.API", "MRMS.API\MRMS.API.csproj", "{D705DB56-4669-4F27-9C67-3678D153ECDF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B6E09471-1426-43B4-974A-33301A188DBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6E09471-1426-43B4-974A-33301A188DBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6E09471-1426-43B4-974A-33301A188DBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6E09471-1426-43B4-974A-33301A188DBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{322792A4-ACB4-41BB-AE80-7062AD84B0FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{322792A4-ACB4-41BB-AE80-7062AD84B0FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{322792A4-ACB4-41BB-AE80-7062AD84B0FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{322792A4-ACB4-41BB-AE80-7062AD84B0FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{538FFDBD-0C47-4712-AA26-7A437B88816B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{538FFDBD-0C47-4712-AA26-7A437B88816B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{538FFDBD-0C47-4712-AA26-7A437B88816B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{538FFDBD-0C47-4712-AA26-7A437B88816B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D705DB56-4669-4F27-9C67-3678D153ECDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D705DB56-4669-4F27-9C67-3678D153ECDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D705DB56-4669-4F27-9C67-3678D153ECDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D705DB56-4669-4F27-9C67-3678D153ECDF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
