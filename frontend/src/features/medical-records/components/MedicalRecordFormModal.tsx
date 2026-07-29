@@ -7,6 +7,7 @@ import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
 import { Button } from '../../../components/ui/Button';
 import { medicalRecordFormSchema, MedicalRecordFormValues } from '../schemas/medicalRecordSchema';
+import { patientService } from '../../../services/patientService';
 import { getStoredPatients, INITIAL_DOCTORS } from '../../../services/mockBackend';
 import { Patient } from '../../../types';
 
@@ -29,7 +30,14 @@ export const MedicalRecordFormModal: React.FC<MedicalRecordFormModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setPatients(getStoredPatients());
+      patientService
+        .getPatients({ pageNumber: 1, pageSize: 100 })
+        .then((res) => {
+          setPatients(res.items && res.items.length > 0 ? res.items : getStoredPatients());
+        })
+        .catch(() => {
+          setPatients(getStoredPatients());
+        });
     }
   }, [isOpen]);
 

@@ -48,6 +48,13 @@ namespace MRMS.Application.Services
                 throw new BadRequestException("Cannot schedule an appointment in the past.");
             }
 
+            // Validate patient exists
+            var patient = await _unitOfWork.Patients.GetByIdAsync(dto.PatientId, cancellationToken);
+            if (patient == null)
+            {
+                throw new NotFoundException(nameof(Patient), dto.PatientId);
+            }
+
             // Check duplicate booking slot for Doctor
             var isSlotTaken = await _appointmentRepo.ExistsByDoctorAndSlotAsync(dto.DoctorId, dto.AppointmentDateTime, cancellationToken: cancellationToken);
             if (isSlotTaken)

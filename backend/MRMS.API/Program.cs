@@ -67,11 +67,12 @@ builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 
 var app = builder.Build();
 
-// Auto-create database on startup
+// Auto-create database and seed initial data on startup
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.EnsureCreated();
+    DbSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
 }
 
 // Configure HTTP Request Pipeline
